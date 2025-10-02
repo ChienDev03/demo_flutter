@@ -1,4 +1,5 @@
 import 'dart:math'; // dùng để random tên
+import 'package:demo_framework/screens/stateless_widgets.dart';
 import 'package:flutter/material.dart';
 
 // StatefulWidget để demo vòng đời (life cycle)
@@ -10,12 +11,12 @@ class StatefulWidgets extends StatefulWidget {
 }
 
 /// State quản lý dữ liệu và UI cho StatefulWidgets
+///
+/// dùng để đăng ký WidgetsBindingObserver →
+/// giúp theo dõi trạng thái app. Nếu bạn muốn khởi tạo name bằng 1 giá trị từ server,
+/// thì nó sẽ hiển thị ngay khi build.
 class StatefulWidgetsState extends State<StatefulWidgets>
-        /// bạn dùng để đăng ký WidgetsBindingObserver →
-        /// giúp theo dõi trạng thái app. Nếu bạn muốn khởi tạo name bằng 1 giá trị từ server,
-        /// thì nó sẽ hiển thị ngay khi build.
-        with
-        WidgetsBindingObserver {
+    with WidgetsBindingObserver {
   //tên hiển thị mặc định
   String name = "Nguyễn Văn An";
 
@@ -37,7 +38,7 @@ class StatefulWidgetsState extends State<StatefulWidgets>
   @override
   void initState() {
     super.initState();
-    debugPrint("initState: Widget được tạo");
+    print("initState: Widget được tạo");
     // Đăng ký observer để theo dõi vòng đời app (resumed, paused,...)
     WidgetsBinding.instance.addObserver(this);
   }
@@ -47,13 +48,13 @@ class StatefulWidgetsState extends State<StatefulWidgets>
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    debugPrint("didChangeDependencies: Dependencies thay đổi");
+    print("didChangeDependencies: Dependencies thay đổi");
   }
 
   // 3. build: nơi xây dựng UI, có thể được gọi nhiều lần
   @override
   Widget build(BuildContext context) {
-    debugPrint("build: UI được build");
+    print("build: UI được build");
     return Scaffold(
       appBar: AppBar(title: const Text("Profile"), centerTitle: true),
       body: Column(
@@ -87,7 +88,6 @@ class StatefulWidgetsState extends State<StatefulWidgets>
               ],
             ),
           ),
-
           // Nút đổi tên, khi bấm sẽ random tên trong danh sách
           ElevatedButton(
             onPressed: () {
@@ -95,8 +95,9 @@ class StatefulWidgetsState extends State<StatefulWidgets>
                 // Random index và gán vào biến name
                 final random = Random();
                 name = names[random.nextInt(names.length)];
+                print(name);
               });
-              debugPrint("setState: Đổi tên thành $name");
+              print("setState: Đổi tên thành $name");
             },
             child: const Text("Đổi tên (Random)"),
           ),
@@ -107,7 +108,16 @@ class StatefulWidgetsState extends State<StatefulWidgets>
           Expanded(
             child: ListView(
               children: [
-                buildProfileItem(Icons.person, "Thông tin cá nhân"),
+                InkWell(
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) =>
+                      const StatelessWidgets(), // Navigator to demo stateless widget
+                    ),
+                  ),
+                  child: buildProfileItem(Icons.person, "Thông tin cá nhân"),
+                ),
                 buildProfileItem(Icons.history, "Lịch sử bài test"),
                 buildProfileItem(Icons.lock, "Đổi mật khẩu"),
                 buildProfileItem(Icons.settings, "Cài đặt"),
@@ -126,9 +136,9 @@ class StatefulWidgetsState extends State<StatefulWidgets>
       leading: Icon(icon, color: Colors.blue),
       title: Text(title),
       trailing: const Icon(Icons.chevron_right),
-      onTap: () {
-        debugPrint("Tap vào: $title");
-      },
+      // onTap: () {
+      //   print("Click: $title");
+      // },
     );
   }
 
@@ -136,35 +146,56 @@ class StatefulWidgetsState extends State<StatefulWidgets>
   @override
   void didUpdateWidget(covariant StatefulWidgets oldWidget) {
     super.didUpdateWidget(oldWidget);
-    debugPrint("didUpdateWidget: Widget cha rebuild và truyền widget mới vào");
+    print("didUpdateWidget: Widget cha rebuild và truyền widget mới vào");
   }
+
+  // @override
+  // void setState(VoidCallback fn) {
+  //   // logic chạy trước khi gọi super
+  //   print("setState được gọi, name hiện tại: $name");
+  //
+  //   super.setState(() {
+  //     fn();
+  //     // logic chạy sau khi cập nhật state
+  //     print("setState hoàn tất, name mới: $name");
+  //   });
+  // }
 
   // 5. reassemble: chỉ chạy khi hot reload
   @override
   void reassemble() {
     super.reassemble();
-    debugPrint("reassemble: Hot reload gọi");
+    print("reassemble: Hot reload gọi");
   }
 
   // 6. didChangeAppLifecycleState: chạy khi app chuyển trạng thái
   // (paused, resumed, inactive, detached)
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    debugPrint("didChangeAppLifecycleState: $state");
+    if (state == AppLifecycleState.paused) {
+      debugPrint("-> App vào background");
+    } else if (state == AppLifecycleState.resumed) {
+      debugPrint("-> App quay lại foreground");
+    } else if (state == AppLifecycleState.inactive) {
+      debugPrint("-> App tạm thời k nhận input");
+    } else if (state == AppLifecycleState.detached) {
+      debugPrint("-> App đã thoát");
+    }
   }
 
   // 7. deactivate: gọi khi widget bị remove tạm thời khỏi cây widget
   @override
   void deactivate() {
     super.deactivate();
-    debugPrint("deactivate: Widget bị remove tạm thời khỏi cây widget");
+    print("deactivate: Widget bị remove tạm thời khỏi cây widget");
   }
 
-  // 8. dispose: gọi khi widget bị hủy
-  @override
-  void dispose() {
-    WidgetsBinding.instance.removeObserver(this);
-    debugPrint("dispose: Widget bị destroy");
-    super.dispose();
-  }
+  // 8. dispose: gọi khi widget bị xóa
+  // @override
+  // void dispose() {
+  //   WidgetsBinding.instance.removeObserver(this);
+  //   print("dispose: Widget bị hủy");
+  //   super.dispose();
+  //   WidgetsBinding.instance.removeObserver(this);
+  // }
 }
